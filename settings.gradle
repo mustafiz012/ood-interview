@@ -1,1 +1,4 @@
 rootProject.name = 'ood-interview'
+
+includeBuild 'java'
+includeBuild 'kotlin'

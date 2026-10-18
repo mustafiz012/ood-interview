@@ -30,8 +30,16 @@ tasks.register('buildAll') {
     dependsOn 'buildJava', 'buildKotlin'
 }
 
-tasks.register('test') {
+tasks.matching { it.name == 'test' }.configureEach {
     group = 'verification'
     description = 'Runs tests across all projects (alias for testAll)'
     dependsOn 'testAll'
+}
+
+if (tasks.findByName('test') == null) {
+    tasks.register('test') {
+        group = 'verification'
+        description = 'Runs tests across all projects (alias for testAll)'
+        dependsOn 'testAll'
+    }
 }
