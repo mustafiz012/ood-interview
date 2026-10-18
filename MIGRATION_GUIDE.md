@@ -1,188 +1,124 @@
-# Migration Guide: Manual Build → Modern Gradle
+# Migration Guide: Language-Based Modular Restructure
 
-Complete guide for migrating Object-Oriented Design projects from manual builds to modern Gradle with VS Code integration.
+This guide documents the restructuring of the Object-Oriented Design (OOD) repository from a flat Java-only structure into language-partitioned workspaces (`java/` and `kotlin/`) with independent multi-project Gradle builds and complete idiomatic Kotlin implementations.
 
-## Key Improvements
+## Architectural Changes
 
-✅ **In-place migration** - No separate directories  
-✅ **Preserve original structure** - Keep existing files as reference  
-✅ **Simple directory mapping** - Direct project directory mapping  
-✅ **Clean multi-project setup** - All projects in one workspace  
+### 1. Partitioned Language Workspaces
+The root directory is partitioned into two language-specific directories:
+- **`java/`**: Houses all 11 Java modules with an independent Gradle multi-project build (`java/settings.gradle` and `java/build.gradle`).
+- **`kotlin/`**: Houses all 11 Kotlin modules with an independent Gradle multi-project build (`kotlin/settings.gradle` and `kotlin/build.gradle`).
 
-## Migration Process
+### 2. Independent Multi-Project Builds
+Each language workspace can be built and tested independently without cross-language compiler plugin overhead:
+- Java build uses Java 17 toolchain and JUnit 5.
+- Kotlin build uses Kotlin JVM 2.0.21 with JVM 17 toolchain and JUnit 5.
 
-### Step 1: Set Up Multi-Project Structure
-
-Create root-level Gradle files:
-
-**settings.gradle**
-```gradle
-rootProject.name = 'oo-design'
-
-include 'vendingmachine'
-include 'atm'
-// ... other projects
-
-// Map to actual directories
-project(':vendingmachine').projectDir = file('Vending_Machine_Code')
-project(':atm').projectDir = file('ATM_Code')
-// ... other mappings
-```
-
-**build.gradle** (root)
-```gradle
-subprojects {
-    apply plugin: 'java'
-    
-    repositories {
-        mavenCentral()
-    }
-    
-    dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
-    
-    java {
-        toolchain { languageVersion = JavaLanguageVersion.of(17) }
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    
-    tasks.named('test') { useJUnitPlatform() }
-}
-```
-
-### Step 2: Migrate Individual Project
-
-For each project directory (e.g., `Vending_Machine_Code/`):
-
-1. **Update the original README**:
-   ```bash
-   cd Vending_Machine_Code/vendingmachine
-   # Update existing README.md to include:
-   # - Gradle build instructions
-   # - All valuable original content (features, classes, test coverage)
-   # - Remove references to manual builds (readers have no context)
-   
-   # All source files stay exactly as-is
-   ```
-
-2. **Create project build.gradle with custom source paths**:
-   ```gradle
-   plugins {
-       id 'java'
-   }
-   
-   // Configure source directories to use original paths
-   sourceSets {
-       main {
-           java {
-               srcDir 'vendingmachine'
-               exclude '**/*Test.java'  // Exclude test files from main
-           }
-       }
-       test {
-           java {
-               srcDir 'vendingmachine'
-               include '**/*Test.java'  // Include only test files
-           }
-       }
-   }
-   ```
-
-
-### Step 3: Test Migration
-
+### 3. Root Build Orchestration
+The root build scripts (`settings.gradle` and `build.gradle`) provide delegating tasks for cross-language convenience:
 ```bash
-# From root directory
-./gradlew :vendingmachine:build
-./gradlew :vendingmachine:test
+./gradlew testAll   # Runs all Java and Kotlin test suites
+./gradlew buildAll  # Compiles and builds all Java and Kotlin modules
 ```
 
-### Step 4: Verify Multi-Project Setup
-
-```bash
-./gradlew projects  # Should show all projects
-./gradlew buildAll  # Build everything
-```
-
-## Directory Structure After Migration
-
-```
-oo-design/
-├── build.gradle                    # Root build configuration
-├── settings.gradle                 # Multi-project setup
-├── gradlew, gradlew.bat           # Gradle wrapper
-├── gradle/                        # Wrapper files
-├── .vscode/                       # VS Code configuration
-│
-├── Vending_Machine_Code/          # Original directory (migrated)
-│   ├── build.gradle              # Project-specific config (only new file!)
-│   └── vendingmachine/           # Original directory completely unchanged
-│       ├── README.md             # Updated with Gradle instructions
-│       ├── *.java                # All source and test files
-│       └── combined.plantuml     # UML diagrams in original location
-│
-├── ATM_Code/                     # Next project to migrate
-├── Blackjack_Code/              # Next project to migrate
-└── ...
-```
-
-## Benefits of In-Place Migration
+## Directory Structure Comparison
 
 ### Before
-```bash
-# Each project had separate build process
-cd Vending_Machine_Code/vendingmachine
-mkdir lib
-curl -L <url> -o lib/junit.jar
-javac -cp lib/junit.jar *.java
-java -jar lib/junit-platform.jar --scan-classpath
+```
+ood-interview/
+├── build.gradle
+├── settings.gradle
+├── atm/
+├── blackjack/
+├── elevator_system/
+├── file_search/
+├── grocery_store/
+├── movie_ticket/
+├── parking_lot/
+├── restaurant/
+├── shipping_locker/
+├── tic_tac_toe/
+└── vending_machine/
 ```
 
-### After  
-```bash
-# From root directory
-./gradlew :vendingmachine:test
-./gradlew :atm:test
-./gradlew :blackjack:test
+### After
+```
+ood-interview/
+├── build.gradle                        # Root orchestration / convenience tasks
+├── settings.gradle                     # Root project settings
+├── gradlew, gradlew.bat, gradle/       # Gradle wrapper shared across root
+├── README.md                           # Main repo documentation
+├── MIGRATION_GUIDE.md                  # Restructuring and migration guide
+│
+├── java/                               # Java independent workspace
+│   ├── build.gradle                    # Java subproject build configuration
+│   ├── settings.gradle                 # Java module declarations
+│   ├── atm/
+│   ├── blackjack/
+│   ├── elevator_system/
+│   ├── file_search/
+│   ├── grocery_store/
+│   ├��─ movie_ticket/
+│   ├── parking_lot/
+│   ├── restaurant/
+│   ├── shipping_locker/
+│   ├── tic_tac_toe/
+│   └── vending_machine/
+│
+└── kotlin/                             # Kotlin independent workspace
+    ├── build.gradle                    # Kotlin subproject build configuration
+    ├── settings.gradle                 # Kotlin module declarations
+    ├── atm/
+    ├── blackjack/
+    ├── elevator_system/
+    ├── file_search/
+    ├── grocery_store/
+    ├── movie_ticket/
+    ├── parking_lot/
+    ├── restaurant/
+    ├── shipping_locker/
+    ├── tic_tac_toe/
+    └── vending_machine/
 ```
 
-## VS Code Integration
+## Build & Test Workflows
 
-Opening the root folder provides:
-- **All projects in one workspace**
-- **Gradle tasks for each project**
-- **Unified debugging and testing**
-- **No context switching between projects**
-
-## Migration Checklist
-
-For each project:
-
-- [ ] Create project `build.gradle` with custom source paths
-- [ ] Update original README with Gradle instructions  
-- [ ] Test: `./gradlew :project:build test`
-- [ ] Update root README with project status
-- [ ] Configure test output visibility (optional but recommended):
-  ```gradle
-  tasks.named('test') {
-      useJUnitPlatform()
-      testLogging {
-          showStandardStreams = true
-      }
-      outputs.upToDateWhen { false }  // Always run tests, never cache
-  }
+### Testing from Root
+- Run all tests across both Java and Kotlin:
+  ```bash
+  ./gradlew testAll
+  ```
+- Build everything:
+  ```bash
+  ./gradlew buildAll
   ```
 
-## Key Advantages
+### Testing Java Modules Only
+- Run all Java tests:
+  ```bash
+  ./gradlew -p java test
+  ```
+- Run a specific Java module test:
+  ```bash
+  ./gradlew -p java :atm:test
+  ./gradlew -p java :vendingmachine:test
+  ```
 
-1. **Preserves History**: Original files remain intact
-2. **No Confusion**: Single source of truth per project  
-3. **Easy Navigation**: All projects accessible from root
-4. **Professional Structure**: Industry-standard Gradle layout
-5. **IDE Friendly**: Full VS Code integration
-6. **Reader Friendly**: One command to run any project
+### Testing Kotlin Modules Only
+- Run all Kotlin tests:
+  ```bash
+  ./gradlew -p kotlin test
+  ```
+- Run a specific Kotlin module test:
+  ```bash
+  ./gradlew -p kotlin :atm:test
+  ./gradlew -p kotlin :vendingmachine:test
+  ```
 
-This approach transforms the repository into a professional, cohesive development environment while preserving the original educational structure.
+## Kotlin Design Principles Applied
+The Kotlin modules follow modern idiomatic Kotlin conventions:
+- **Data Classes**: Value-based domain models (`Item`, `Product`, `Card`, `Player`, `Ticket`) leverage concise `data class` definitions with automatic `equals`, `hashCode`, and `toString`.
+- **Property Access & Immutability**: Elimination of boilerplate getters/setters in favor of `val` and `var` properties with encapsulated setters (`private set`).
+- **Null Safety**: Strict compile-time null safety with safe calls (`?.`) and explicit elvis operators (`?:`) replacing runtime null pointer checks.
+- **Concise Functional Expressions**: Stream operations converted to Kotlin standard library collections methods (`map`, `fold`, `all`, `any`, `flatten`).
+- **Standard Project Layout**: Each Kotlin subproject follows the standard Gradle directory conventions (`src/main/kotlin` and `src/test/kotlin`).

@@ -41,6 +41,7 @@ Thumbs.db
 *.tmp
 *.temp
 *~
+.junie/
 
 # Maven (if any projects use it)
 target/

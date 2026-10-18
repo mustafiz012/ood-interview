@@ -1,44 +1,37 @@
-plugins {
-    id 'java'
+tasks.register('testJava', GradleBuild) {
+    dir = file('java')
+    tasks = ['test']
 }
 
-// Common configuration for all subprojects
-subprojects {
-    apply plugin: 'java'
-    
-    repositories {
-        mavenCentral()
-    }
-    
-    dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
-    
-    java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    
-    tasks.named('test') {
-        useJUnitPlatform()
-        testLogging {
-            showStandardStreams = true
-        }
-        outputs.upToDateWhen { false }  // Always run tests, never cache
-    }
+tasks.register('testKotlin', GradleBuild) {
+    dir = file('kotlin')
+    tasks = ['test']
 }
 
-// Root level tasks
+tasks.register('buildJava', GradleBuild) {
+    dir = file('java')
+    tasks = ['build']
+}
 
-task runAllTests {
-    description = 'Run tests for all projects'
+tasks.register('buildKotlin', GradleBuild) {
+    dir = file('kotlin')
+    tasks = ['build']
+}
+
+tasks.register('testAll') {
     group = 'verification'
-    dependsOn subprojects.collect { it.tasks.named('test') }
+    description = 'Runs tests across both Java and Kotlin projects'
+    dependsOn 'testJava', 'testKotlin'
 }
 
-task buildAll {
-    description = 'Build all projects'
+tasks.register('buildAll') {
     group = 'build'
-    dependsOn subprojects.collect { it.tasks.named('build') }
+    description = 'Builds all Java and Kotlin projects'
+    dependsOn 'buildJava', 'buildKotlin'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Runs tests across all projects (alias for testAll)'
+    dependsOn 'testAll'
 }
